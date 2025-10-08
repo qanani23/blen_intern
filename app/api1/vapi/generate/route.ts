@@ -1,8 +1,7 @@
 import {generateText} from "ai";
-import {google} from "@ai-sdk/google"
+import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { getRandomInterviewCover } from "@/lib/utils";
 import { db } from "@/firebase/admin";
-import { success } from "zod/v4";
 
 export async function GET(){
     return Response.json({success:true,data:"Thank You!"},{status:200});
@@ -12,12 +11,19 @@ export async function POST(request:Request){
     const{type,role,level,teckstack,amount,userid}=await request.json();
 
     try {
+        if (!process.env.GOOGLE_API_KEY) {
+            return Response.json({ success: false, error: "GOOGLE_API_KEY is not set" }, { status: 500 });
+        }
+
+        const google = createGoogleGenerativeAI({
+            apiKey: process.env.GOOGLE_API_KEY,
+        });
         const {text:questions} = await generateText({
-            model:google("gemini-2.0-flash-001"),
+            model:google("gemini-pro"),
             prompt:`Prepare questions for a job interview.
         The job role is ${role}.
         The job experience level is ${level}.
-        The tech stack used in the job is: ${techstack}.
+        The tech stack used in the job is: ${teckstack}.
         The focus between behavioural and technical questions should lean towards: ${type}.
         The amount of questions required is: ${amount}.
         Please return only the questions, without any additional text.
